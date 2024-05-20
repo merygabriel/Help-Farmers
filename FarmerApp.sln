@@ -1,0 +1,50 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34322.80
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FarmerApp.API", "FarmerApp.API\FarmerApp.API.csproj", "{0C6458A9-0D2B-4932-8096-F000EB623C0C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1E6DCD7A-CDF8-44B9-99B5-56AEE2675240} = {1E6DCD7A-CDF8-44B9-99B5-56AEE2675240}
+		{4D601591-F7B7-42A8-83D6-B70328F8FCD4} = {4D601591-F7B7-42A8-83D6-B70328F8FCD4}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FarmerApp.Data", "FarmerApp.Data\FarmerApp.Data.csproj", "{1E6DCD7A-CDF8-44B9-99B5-56AEE2675240}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4D601591-F7B7-42A8-83D6-B70328F8FCD4} = {4D601591-F7B7-42A8-83D6-B70328F8FCD4}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FarmerApp.Shared", "FarmerApp.Shared\FarmerApp.Shared.csproj", "{4D601591-F7B7-42A8-83D6-B70328F8FCD4}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FarmerApp.Core", "FarmerApp.Core\FarmerApp.Core.csproj", "{8D3F48BC-4FCE-4890-8570-4F0896749C2E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0C6458A9-0D2B-4932-8096-F000EB623C0C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C6458A9-0D2B-4932-8096-F000EB623C0C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C6458A9-0D2B-4932-8096-F000EB623C0C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C6458A9-0D2B-4932-8096-F000EB623C0C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1E6DCD7A-CDF8-44B9-99B5-56AEE2675240}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1E6DCD7A-CDF8-44B9-99B5-56AEE2675240}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1E6DCD7A-CDF8-44B9-99B5-56AEE2675240}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1E6DCD7A-CDF8-44B9-99B5-56AEE2675240}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D601591-F7B7-42A8-83D6-B70328F8FCD4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D601591-F7B7-42A8-83D6-B70328F8FCD4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D601591-F7B7-42A8-83D6-B70328F8FCD4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D601591-F7B7-42A8-83D6-B70328F8FCD4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D3F48BC-4FCE-4890-8570-4F0896749C2E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D3F48BC-4FCE-4890-8570-4F0896749C2E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D3F48BC-4FCE-4890-8570-4F0896749C2E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D3F48BC-4FCE-4890-8570-4F0896749C2E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3122665C-BD6A-4E61-9821-832736A0D3B1}
+	EndGlobalSection
+EndGlobal

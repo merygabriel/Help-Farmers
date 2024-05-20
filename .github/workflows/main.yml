@@ -1,0 +1,122 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ master ]
+    paths-ignore:
+      - 'docker-compose.yaml'
+
+jobs:
+  increment-version-if-needed:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        token: ${{ secrets.PAT }}
+        fetch-depth: 2
+
+    - name: Check and increment version
+      run: |
+        CURRENT_VERSION=$(grep -oP 'Version = "\K[^"]+' FarmerApp.API/Utils/ServiceRegisterer.cs)
+    
+        if git rev-list --max-count=1 HEAD -- FarmerApp.API/Utils/ServiceRegisterer.cs >/dev/null 2>&1; then
+          git checkout $(git rev-list --max-count=1 HEAD^ -- FarmerApp.API/Utils/ServiceRegisterer.cs)
+          PREVIOUS_VERSION=$(grep -oP 'Version = "\K[^"]+' FarmerApp.API/Utils/ServiceRegisterer.cs)
+          git checkout -
+        else
+          PREVIOUS_VERSION=""
+        fi
+    
+        if [ "$CURRENT_VERSION" = "$PREVIOUS_VERSION" ]; then
+          IFS='.' read -ra VERSION_PARTS <<< "${CURRENT_VERSION//v}"
+    
+          if [ "${VERSION_PARTS[-1]}" = "9" ]; then
+            if [ "${VERSION_PARTS[-2]}" = "9" ]; then
+              VERSION_PARTS[-1]=0
+              VERSION_PARTS[-2]=0
+              VERSION_PARTS[-3]=$((VERSION_PARTS[-3] + 1))
+            else
+              VERSION_PARTS[-1]=0
+              VERSION_PARTS[-2]=$((VERSION_PARTS[-2] + 1))
+            fi
+          else
+            VERSION_PARTS[-1]=$((VERSION_PARTS[-1] + 1))
+          fi
+    
+          IFS='.'; NEW_VERSION="v${VERSION_PARTS[*]}";
+          sed -i "s/$CURRENT_VERSION/$NEW_VERSION/g" FarmerApp.API/Utils/ServiceRegisterer.cs
+        
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "github-actions@github.com"
+          git add FarmerApp.API/Utils/ServiceRegisterer.cs
+          git commit -m "Increment version to $NEW_VERSION"
+          git push
+
+          exit 1
+        fi
+
+  build-and-push:
+    needs: increment-version-if-needed
+    runs-on: ubuntu-latest
+    outputs:
+      current_version: ${{ steps.get_version.outputs.current_version }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        token: ${{ secrets.PAT }}
+
+    - name: Get application version
+      id: get_version
+      run: |
+        echo "current_version=$(grep -oP 'Version = "v\K[^"]+' FarmerApp.API/Utils/ServiceRegisterer.cs)" >> $GITHUB_ENV
+        echo "::set-output name=current_version::$(grep -oP 'Version = "v\K[^"]+' FarmerApp.API/Utils/ServiceRegisterer.cs)"
+
+    - name: Build Docker image
+      run: >
+        docker build . 
+        --build-arg DB_CONNECTION_STRING="${{ secrets.DB_CONNECTION_STRING }}" 
+        --build-arg JWT_SECRET_KEY="${{ secrets.JWT_SECRET_KEY }}" 
+        --build-arg JWT_REFRESH_SECRET_KEY="${{ secrets.JWT_REFRESH_SECRET_KEY }}" 
+        --build-arg ACCESS_TOKEN_EXPIRY_MINUTES="${{ secrets.ACCESS_TOKEN_EXPIRY_MINUTES }}" 
+        --build-arg REFRESH_TOKEN_EXPIRY_MINUTES="${{ secrets.REFRESH_TOKEN_EXPIRY_MINUTES }}" 
+        --build-arg SEED_USERNAME="${{ secrets.SEED_USERNAME }}"
+        --build-arg SEED_PASS="${{ secrets.SEED_PASS }}"
+        -t ${{ secrets.DOCKER_HUB_USERNAME }}/farmerapp-server:main
+      
+    - name: Login to Docker Hub
+      run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+
+    - name: Push Docker image
+      run: docker push ${{ secrets.DOCKER_HUB_USERNAME }}/farmerapp-server:main
+
+  deploy-on-server:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    
+    - name: Install SSH key
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.REMOTE_SERVER_PRIVATE_SSH_KEY }}
+
+    - name: Add server to known hosts
+      run: ssh-keyscan ${{ secrets.REMOTE_SERVER_IP_ADDRESS }} >> ~/.ssh/known_hosts
+
+    - name: Copy docker-compose.yaml to server
+      run: scp docker-compose.yaml ${{ secrets.REMOTE_SERVER_USERNAME }}@${{ secrets.REMOTE_SERVER_IP_ADDRESS }}:~/farmer
+
+    - name: Login to Docker Hub
+      run: |
+        ssh ${{ secrets.REMOTE_SERVER_USERNAME }}@${{ secrets.REMOTE_SERVER_IP_ADDRESS }} "echo \"${{ secrets.DOCKER_HUB_PASSWORD }}\" | docker login -u \"${{ secrets.DOCKER_HUB_USERNAME }}\" --password-stdin"
+ 
+    - name: Deploy to server
+      run: |
+        ssh ${{ secrets.REMOTE_SERVER_USERNAME }}@${{ secrets.REMOTE_SERVER_IP_ADDRESS }} "docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/farmerapp-server:main"
+        ssh ${{ secrets.REMOTE_SERVER_USERNAME }}@${{ secrets.REMOTE_SERVER_IP_ADDRESS }} "cd /home/${{ secrets.REMOTE_SERVER_USERNAME }}/farmer && docker-compose up --no-deps server -d"

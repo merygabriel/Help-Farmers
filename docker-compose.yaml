@@ -1,0 +1,44 @@
+version: '3.8'
+
+volumes:
+    dbdata:
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD}"
+    user: root
+    logging:
+      driver: json-file
+    ports:
+      - 1433:1433
+    volumes:
+      - type: volume
+        source: dbdata
+        target: /etc/${SERVER_USERNAME}/farmer/mssql
+
+  server:
+    container_name: server
+    restart: always
+    image: ${DOCKER_HUB_USERNAME}/farmerapp-server:main
+    depends_on:
+      - db
+    ports:
+      - 127.0.0.1:8082:443
+      - 127.0.0.1:8081:80
+    logging:
+      driver: json-file
+
+  dev_server:
+    container_name: dev_server
+    restart: always
+    image: ${DOCKER_HUB_USERNAME}/farmerapp-server:dev
+    depends_on:
+      - db
+    ports:
+      - 127.0.0.1:8084:443
+      - 127.0.0.1:8083:80
+    logging:
+      driver: json-file

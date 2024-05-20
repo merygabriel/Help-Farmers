@@ -1,0 +1,41 @@
+name: Docker Compose Workflow
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'docker-compose.yaml'
+
+jobs:
+  copy-docker-compose-to-server:
+    runs-on: ubuntu-latest
+
+    steps: 
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Check if only docker-compose has been changed
+      run: |
+        CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r $(git rev-parse HEAD))
+        FILES_ARRAY=($CHANGED_FILES)
+        FILE_COUNT=${#FILES_ARRAY[@]}
+
+        if [ $FILE_COUNT -gt 1 ]; then
+          exit 1
+        fi
+    
+    - name: Install SSH key
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.REMOTE_SERVER_PRIVATE_SSH_KEY }}
+
+    - name: Add server to known hosts
+      run: ssh-keyscan ${{ secrets.REMOTE_SERVER_IP_ADDRESS }} >> ~/.ssh/known_hosts
+
+    - name: Copy docker-compose.yaml to server
+      run: scp docker-compose.yaml ${{ secrets.REMOTE_SERVER_USERNAME }}@${{ secrets.REMOTE_SERVER_IP_ADDRESS }}:~/farmer
+
+    - name: Docker-compose up
+      run: |
+        #ssh ${{ secrets.REMOTE_SERVER_USERNAME }}@${{ secrets.REMOTE_SERVER_IP_ADDRESS }} "cd /home/${{ secrets.REMOTE_SERVER_USERNAME }}/farmer && docker-compose down"
+        ssh ${{ secrets.REMOTE_SERVER_USERNAME }}@${{ secrets.REMOTE_SERVER_IP_ADDRESS }} "cd /home/${{ secrets.REMOTE_SERVER_USERNAME }}/farmer && docker-compose up --no-deps server -d"
